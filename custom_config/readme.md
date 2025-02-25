@@ -1,0 +1,1 @@
+This is the directory for storing custom `.env` and `settings.yaml` files, `agent.py` will automatically copy them to the `ragtest` directory.

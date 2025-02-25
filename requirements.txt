@@ -1,0 +1,15 @@
+requests
+regex
+Markdown==3.7
+llama-index==0.12.19
+graspologic==3.4.1
+numpy==1.26.4
+scipy==1.12.0
+python-telegram-bot==21.10
+openai==1.61.0
+graphrag==1.2.0
+uvicorn==0.34.0
+fastapi==0.115.4
+telegramify-markdown==0.4.2
+pipmaster==0.4.0
+python-multipart==0.0.20
