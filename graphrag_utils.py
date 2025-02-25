@@ -225,7 +225,7 @@ def get_chat_response(message: str, model: str = "deepseek-ai/DeepSeek-R1-Distil
 
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {os.environ.get('NEBULA_API_KEY')}"
+        "Authorization": f"Bearer {os.environ.get('LLM_API_KEY')}"
     }
 
     data = {
