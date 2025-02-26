@@ -18,7 +18,7 @@ async def process_question(query: str) -> str:
       4. Call Meta Llama3 to generate an answer.
     Returns the answer as a string.
     """
-    PROJECT_DIRECTORY = os.path.abspath("./ragtest")  # Project directory containing settings.yaml and output folder.
+    PROJECT_DIRECTORY = os.environ.get("WORK_DIRECTORY", "./ragtest")  # Project directory containing settings.yaml and output folder.
     LOCAL_REPO_PATH = os.path.join(PROJECT_DIRECTORY, "doc_swanchain_repo")
     file_utils.update_repo(LOCAL_REPO_PATH)
     # Converted text files will be saved under the "input" folder.
