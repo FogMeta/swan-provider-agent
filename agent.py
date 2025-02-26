@@ -22,7 +22,7 @@ async def process_question(query: str) -> str:
     try:
         await graphrag_utils.build_index(PROJECT_DIRECTORY)
     except Exception as e:
-        logging.error("Stopping index processing.")
+        logging.error("Stopping index processing. Exception: %s",e)
         return
     response, context = await graphrag_utils.query_index(PROJECT_DIRECTORY, query, 'global')
     return response
