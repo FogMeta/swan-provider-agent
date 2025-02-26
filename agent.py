@@ -25,7 +25,7 @@ async def process_question(query: str) -> str:
         logging.error("Stopping index processing. Exception: %s",e)
         return
     response, context = await graphrag_utils.query_index(PROJECT_DIRECTORY, query, 'global')
-    return response
+    return graphrag_utils.get_chat_response(response)['data']
 
 if __name__ == "__main__":
     # Load environment variables from .env file.

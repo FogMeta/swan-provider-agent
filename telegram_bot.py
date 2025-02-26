@@ -28,10 +28,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         logging.error("Error processing question: %s", e)
         answer = "There was an error processing your question. Please try again later."
-    chunk_size = 4096
-    for i in range(0, len(answer), chunk_size):
-        await update.message.reply_text(text=telegramify_markdown.markdownify(answer[i:i + chunk_size]),
-                                        parse_mode="MarkdownV2")
+    await update.message.reply_text(text=telegramify_markdown.markdownify(answer), parse_mode="MarkdownV2")
 
 
 if __name__ == '__main__':

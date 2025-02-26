@@ -3,12 +3,12 @@ import logging
 import pandas as pd
 import yaml
 import shutil
+import requests
 # Import Microsoft GraphRAG API and types.
 import graphrag.api as api
 from graphrag.index.typing import PipelineRunResult
 from graphrag.cli.initialize import initialize_project_at
 from graphrag.config.create_graphrag_config import create_graphrag_config
-
 import file_utils
 
 
@@ -72,7 +72,7 @@ async def build_index(project_directory: str):
         # Initialize workspace
         initialize_project_at(project_directory)
         # Use custom config files
-        copy_specified_files(os.getcwd(), project_directory,  [".env", "settings.yaml"])
+        copy_specified_files(os.getcwd(), project_directory, [".env", "settings.yaml"])
     settings = load_config(project_directory)
 
     # Determine the input directory based on test mode
@@ -104,8 +104,9 @@ async def build_index(project_directory: str):
     communities_path = os.path.join(output_folder, "create_final_communities.parquet")
     community_reports_path = os.path.join(output_folder, "create_final_community_reports.parquet")
 
-    if not get_bool_env_var("FORCE_BUILD_GRAPH", default=False) and os.path.exists(entities_path) and os.path.exists(communities_path) and os.path.exists \
-            (community_reports_path):
+    if not get_bool_env_var("FORCE_BUILD_GRAPH", default=False) and os.path.exists(entities_path) and os.path.exists(
+            communities_path) and os.path.exists \
+                (community_reports_path):
         logging.info("Index already built, skipping index build.")
     else:
         logging.info("Building GraphRAG index...")
@@ -113,9 +114,11 @@ async def build_index(project_directory: str):
             index_result: list[PipelineRunResult] = await api.build_index(config=graphrag_config)
             for workflow_result in index_result:
                 if workflow_result.errors:
-                    logging.error("Workflow '%s' encountered errors: %s", workflow_result.workflow, workflow_result.errors)
+                    logging.error("Workflow '%s' encountered errors: %s", workflow_result.workflow,
+                                  workflow_result.errors)
                 else:
-                    logging.info("Workflow '%s' succeeded. Details: %s", workflow_result.workflow, workflow_result.__dict__)
+                    logging.info("Workflow '%s' succeeded. Details: %s", workflow_result.workflow,
+                                 workflow_result.__dict__)
         except Exception as e:
             logging.error("Exception during index building: %s", e)
             raise
@@ -184,7 +187,7 @@ async def global_search(query, graphrag_config, entities, communities, community
     return response, context
 
 
-async def local_search(query, graphrag_config, entities,  community_reports, nodes, text_units, relationships):
+async def local_search(query, graphrag_config, entities, community_reports, nodes, text_units, relationships):
     try:
         response, context = await api.local_search(
             config=graphrag_config,
@@ -204,12 +207,7 @@ async def local_search(query, graphrag_config, entities,  community_reports, nod
     return response, context
 
 
-import requests
-import os
-
-
-def get_chat_response(message: str, model: str = "deepseek-ai/DeepSeek-R1-Distill-Llama-70B",
-                      max_tokens: int = 100, temperature: float = 1.0, top_p: float = 0.9,
+def get_chat_response(message: str, max_tokens: int = 100, temperature: float = 1.0, top_p: float = 0.9,
                       stream: bool = False) -> dict:
     """
     Send a chat request to the NebulaBlock API and get the model's response.
@@ -226,18 +224,24 @@ def get_chat_response(message: str, model: str = "deepseek-ai/DeepSeek-R1-Distil
     - dict: The response from the model.
     """
 
-    url = "https://inference.nebulablock.com/v1/chat/completions"
+    LLM_MODEL = os.environ.get("LLM_MODEL", "meta-llama/Llama-3.3-70B-Instruct")
+    LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://inference.nebulablock.com/v1")
+    url = LLM_BASE_URL + "/chat/completions"
 
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {os.environ.get('LLM_API_KEY')}"
     }
 
+    prompt = """Please summarize the following text while preserving its key points and main ideas. Condense it to a 
+    maximum of 3500 characters. Maintain the core message and important details, but remove redundancies and less 
+    critical information. \n\n"""
+
     data = {
         "messages": [
-            {"role": "user", "content": message}
+            {"role": "user", "content": prompt + message}
         ],
-        "model": model,
+        "model": LLM_MODEL,
         "max_tokens": max_tokens,
         "temperature": temperature,
         "top_p": top_p,
