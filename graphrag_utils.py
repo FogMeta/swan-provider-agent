@@ -9,6 +9,8 @@ from graphrag.index.typing import PipelineRunResult
 from graphrag.cli.initialize import initialize_project_at
 from graphrag.config.create_graphrag_config import create_graphrag_config
 
+import file_utils
+
 
 def load_config(project_directory: str) -> dict:
     """Load the settings.yaml configuration file from the project directory."""
@@ -56,7 +58,7 @@ def copy_specified_files(src_dir: str, dest_dir: str, files_to_copy: list):
 # --------------------
 # GraphRAG Indexing
 # --------------------
-async def build_index(project_directory: str, test_mode: bool = False, force_build_graph: bool = False):
+async def build_index(project_directory: str):
     """
     Build the GraphRAG index using the provided configuration and query it to retrieve enriched context.
     Skips index building if output files exist (unless FORCE_BUILD_GRAPH is True).
@@ -70,11 +72,11 @@ async def build_index(project_directory: str, test_mode: bool = False, force_bui
         # Initialize workspace
         initialize_project_at(project_directory)
         # Use custom config files
-        copy_specified_files(os.path.join(os.getcwd(), "custom_config"), project_directory,  [".env", "settings.yaml"])
+        copy_specified_files(os.getcwd(), project_directory,  [".env", "settings.yaml"])
     settings = load_config(project_directory)
 
     # Determine the input directory based on test mode
-    if test_mode:
+    if get_bool_env_var("TEST_MODE", default=False):
         test_input_dir = os.path.join(project_directory, "test_input")
         os.makedirs(test_input_dir, exist_ok=True)
         # Assume test files are already placed in this directory
@@ -82,11 +84,14 @@ async def build_index(project_directory: str, test_mode: bool = False, force_bui
         logging.info("Test mode enabled. Using test input directory: %s", abs_input_dir)
     else:
         abs_input_dir = os.path.join(project_directory, "input")
+        LOCAL_REPO_PATH = os.path.join(project_directory, "doc_swanchain_repo")
+        file_utils.update_repo(LOCAL_REPO_PATH)
+        # Converted text files will be saved under the "input" folder.
+        file_utils.convert_markdown_to_text(LOCAL_REPO_PATH, abs_input_dir)
         logging.info("Using input directory: %s", abs_input_dir)
-
-    # Override the input configuration with the absolute path.
-    settings["input"]["base_dir"] = abs_input_dir
-    settings["input_dir"] = abs_input_dir
+    if not has_files(abs_input_dir):
+        raise ValueError(f"No files found in {abs_input_dir}, cannot build index.\n")
+        return
 
     logging.info("Using input configuration (base_dir): %s", settings["input"]["base_dir"])
 
@@ -99,7 +104,7 @@ async def build_index(project_directory: str, test_mode: bool = False, force_bui
     communities_path = os.path.join(output_folder, "create_final_communities.parquet")
     community_reports_path = os.path.join(output_folder, "create_final_community_reports.parquet")
 
-    if not force_build_graph and os.path.exists(entities_path) and os.path.exists(communities_path) and os.path.exists \
+    if not get_bool_env_var("FORCE_BUILD_GRAPH", default=False) and os.path.exists(entities_path) and os.path.exists(communities_path) and os.path.exists \
             (community_reports_path):
         logging.info("Index already built, skipping index build.")
     else:
@@ -253,3 +258,12 @@ def get_chat_response(message: str, model: str = "deepseek-ai/DeepSeek-R1-Distil
         # Handle request errors
         print(f"Error making request: {e}")
         return {"error": str(e)}
+
+
+def has_files(directory: str) -> bool:
+    return any(os.path.isfile(os.path.join(directory, f)) for f in os.listdir(directory))
+
+
+def get_bool_env_var(var_name: str, default: bool = False) -> bool:
+    var_value = os.environ.get(var_name, str(default))
+    return var_value.lower() in ['true', '1', 't', 'y', 'yes']

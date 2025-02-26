@@ -19,12 +19,11 @@ async def process_question(query: str) -> str:
     Returns the answer as a string.
     """
     PROJECT_DIRECTORY = os.environ.get("WORK_DIRECTORY", "./ragtest")  # Project directory containing settings.yaml and output folder.
-    LOCAL_REPO_PATH = os.path.join(PROJECT_DIRECTORY, "doc_swanchain_repo")
-    file_utils.update_repo(LOCAL_REPO_PATH)
-    # Converted text files will be saved under the "input" folder.
-    CONVERTED_DIR = os.path.join(PROJECT_DIRECTORY, "input")
-    file_utils.convert_markdown_to_text(LOCAL_REPO_PATH, CONVERTED_DIR)
-    await graphrag_utils.build_index(PROJECT_DIRECTORY, test_mode=False, force_build_graph=False)
+    try:
+        await graphrag_utils.build_index(PROJECT_DIRECTORY)
+    except Exception as e:
+        logging.error("Stopping index processing.")
+        return
     response, context = await graphrag_utils.query_index(PROJECT_DIRECTORY, query, 'global')
     return response
 
