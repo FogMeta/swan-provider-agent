@@ -90,19 +90,6 @@ The workflow is as follows:
    
    ```
 
-   Your `requirements.txt` should include:
-   ```
-   asyncio
-   nest_asyncio
-   python-telegram-bot==20.x
-   PyYAML
-   requests
-   pandas
-   markdown
-   python-dotenv
-   graphrag
-   ```
-
 4. **Configure Environment Variables:**
 
    Create a `.env` file in the project root with the following variables:
