@@ -7,19 +7,13 @@ import pandas as pd
 import requests
 import yaml
 from graphrag.cli.initialize import initialize_project_at
-from graphrag.config.create_graphrag_config import create_graphrag_config
+from graphrag.config.load_config import load_config
 from graphrag.index.typing import PipelineRunResult
-
+from pathlib import Path
+import subprocess
+import logging
 import file_utils
-
-
-def load_config(project_directory: str) -> dict:
-    """Load the settings.yaml configuration file from the project directory."""
-    settings_path = os.path.join(project_directory, "settings.yaml")
-    with open(settings_path, "r") as f:
-        settings = yaml.safe_load(f)
-    logging.info("Loaded configuration from %s", settings_path)
-    return settings
+import asyncio
 
 
 def copy_specified_files(src_dir: str, dest_dir: str, files_to_copy: list):
@@ -74,8 +68,11 @@ async def build_index(project_directory: str, force_build_graph=False):
         initialize_project_at(project_directory)
         # Use custom config files
         copy_specified_files(os.getcwd(), project_directory, [".env", "settings.yaml"])
-    settings = load_config(project_directory)
 
+    graphRagConfig = load_config(Path(project_directory), Path(setting_yaml))
+    graphRagConfig.storage.base_dir = os.path.join(project_directory, "output")
+    graphRagConfig.reporting.base_dir = os.path.join(project_directory, "logs")
+    graphRagConfig.embeddings.vector_store['db_uri'] = os.path.join(project_directory, "output/lancedb")
     # Determine the input directory based on test mode
     if get_bool_env_var("TEST_MODE", default=False):
         data_dir = "test_input"
@@ -96,12 +93,6 @@ async def build_index(project_directory: str, force_build_graph=False):
         raise ValueError(f"No files found in {abs_input_dir}, cannot build index.\n")
         return
 
-    settings["input"]["base_dir"] = data_dir
-    logging.info("Using input configuration (base_dir): %s", settings["input"]["base_dir"])
-
-    from graphrag.config.create_graphrag_config import create_graphrag_config
-    graphrag_config = create_graphrag_config(values=settings, root_dir=project_directory)
-
     # Define output file paths.
     output_folder = os.path.join(project_directory, "output")
     entities_path = os.path.join(output_folder, "create_final_entities.parquet")
@@ -114,7 +105,7 @@ async def build_index(project_directory: str, force_build_graph=False):
     else:
         logging.info("Building GraphRAG index...")
         try:
-            index_result: list[PipelineRunResult] = await api.build_index(config=graphrag_config)
+            index_result: list[PipelineRunResult] = await api.build_index(config=graphRagConfig)
             for workflow_result in index_result:
                 if workflow_result.errors:
                     logging.error("Workflow '%s' encountered errors: %s", workflow_result.workflow,
@@ -131,21 +122,16 @@ async def update_index(project_directory: str):
     logging.info("Updating build GraphRAG index...")
     try:
         settings_path = os.path.join(project_directory, "settings.yaml")
-        current_directory = os.path.join(os.path.abspath(os.getcwd()),project_directory,"output")
-        run_graphrag_update(config_path=settings_path, root_path=os.path.abspath(os.getcwd()), output_path=current_directory, verbose=True)
+        await run_graphrag_update(config_path=settings_path, root_path=project_directory, verbose=True)
         logging.info("Updated build GraphRAG index...")
     except Exception as e:
         logging.error("Exception during index building: %s", e)
         raise
 
 
-import subprocess
-import logging
-
-
 async def run_graphrag_update(config_path: str, root_path: str = ".", verbose: bool = False,
-                        memprofile: bool = False, logger: str = "rich", cache: bool = True,
-                        skip_validation: bool = False, output_path: str = None):
+                              memprofile: bool = False, logger: str = "rich", cache: bool = True,
+                              skip_validation: bool = False, output_path: str = None):
     # Build the command
     cmd = ["graphrag", "update"]
 
@@ -188,13 +174,11 @@ async def run_graphrag_update(config_path: str, root_path: str = ".", verbose: b
     except subprocess.CalledProcessError as e:
         # Catch errors in command execution
         logging.error(f"Command execution failed with error: {e.stderr}")
-        print(f"命令执行失败，错误信息: {e.stderr}")
         return f"Error occurred: {e.stderr}"
 
     except Exception as e:
         # Catch any other unexpected errors
         logging.error(f"Unexpected error: {str(e)}")
-        print(f"意外错误: {str(e)}")
         return f"Unexpected error: {str(e)}"
 
 
@@ -208,11 +192,10 @@ async def query_index(project_directory: str, query: str, search_mode: str):
     If test_mode is True, only use a limited set of files for testing.
     """
 
-    settings = load_config(project_directory)
-    graphrag_config = create_graphrag_config(values=settings, root_dir=project_directory)
+    graphrag_config = load_config(root_dir=Path(project_directory))
 
     # Define index file paths.
-    output_folder = os.path.join(project_directory, "ragtest/output")
+    output_folder = os.path.join(project_directory, "output")
     entities_path = os.path.join(output_folder, "create_final_entities.parquet")
     communities_path = os.path.join(output_folder, "create_final_communities.parquet")
     community_reports_path = os.path.join(output_folder, "create_final_community_reports.parquet")

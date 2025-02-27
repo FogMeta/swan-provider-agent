@@ -29,7 +29,7 @@ embeddings:
   async_mode: threaded # or asyncio
   vector_store: 
     type: lancedb # one of [lancedb, azure_ai_search, cosmosdb]
-    db_uri: '${WORK_DIRECTORY}/output/lancedb'
+    db_uri: 'output/lancedb'
     collection_name: default
     overwrite: true
   parallelization:
@@ -80,8 +80,8 @@ storage:
 ## only turn this on if running `graphrag index` with custom settings
 ## we normally use `graphrag update` with the defaults
 update_index_storage:
-  # type: file # or blob
-  # base_dir: "update_output"
+#  type: file # or blob
+#  base_dir: "update_output"
 
 ### Workflow settings ###
 
