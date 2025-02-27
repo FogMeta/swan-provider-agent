@@ -51,18 +51,29 @@ The workflow is as follows:
   - `pyyaml`
   - `requests`
   - `pandas`
-  - `markdown`
+  - `Markdown`
   - `python-dotenv`
-  - Microsoft GraphRAG (`graphrag`)
-  - (Additional dependencies as needed by your LLM wrapper)
+  - `requests`
+  - `regex`
+  - `llama-index`
+  - `graspologic`
+  - `numpy`
+  - `scipy`
+  - `graphrag`
+  - `fastapi`
+  - `telegramify-markdown`
+  - `python-multipart`
+  - `pipmaster`
+  - `openai`
+  - `uvicorn`
 
 ## Installation
 
 1. **Clone this Repository:**
 
    ```bash
-   git clone git@github.com:FogMeta/nova_agent.git
-   cd nova_agent
+   git clone https://github.com/FogMeta/swan-provider-agent.git
+   cd swan-provider-agent
    ```
 
 2. **Set Up a Virtual Environment:**
@@ -96,19 +107,26 @@ The workflow is as follows:
 
    Create a `.env` file in the project root with the following variables:
    ```
-   TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
-   OPENAI_API_KEY=your_open_ai_key
+    TEST_MODE=False
+    FORCE_BUILD_GRAPH=False
+    WORK_DIRECTORY="ragtest"
+    REPO_URL="your git repo url"
+    TELEGRAM_BOT_TOKEN="your_telegram_bot_token_here"
+    
+    LLM_API_KEY="your_llm_api_key"
+    LLM_MODEL="llm_model"
+    LLM_API_BASE="llm_api_base_url"
+    
+    EMBEDDING_API_KEY=""
+    EMBEDDING_MODEL="togethercomputer/m2-bert-80M-2k-retrieval"
+    EMBEDDING_API_BASE="embedding_api_base_url"
    ```
 
-5. **Configure GraphRAG:**
+5. **Configure GraphRAG[Manual index building(optional)]:**
 ```
    graphrag init --root ./ragtest
 ```
  add the GRAPHRAG_API_KEY to .env
-
-```
-  GRAPHRAG_API_KEY=your_openai_api_key_here
-```
 
 ## Configuration for Testing
 
@@ -126,6 +144,15 @@ To facilitate testing, a separate directory is used to store test files. This al
 
    Place the files you wish to use for testing into the `test_input` directory. By default, the system will use the first two files in this directory when test mode is enabled.
 
+3. **Start agent server:**
+   ```
+   python -m agent.py >> server.log 2>&1 &
+   ```
+4. Upload a file and the index will be automatically built incrementally
+   ```
+   curl -X POST "http://127.0.0.1:8000/upload_file" -H "Content-Type: multipart/form-data" -F "file=@<file_path>.txt"
+   ```
+
 ## Usage
 
 1. **Run the Telegram Bot in Test Mode:**
@@ -133,13 +160,13 @@ To facilitate testing, a separate directory is used to store test files. This al
    To run the bot in test mode, which uses only the files in the `test_input` directory, set the `test_mode` flag to `True` when calling the `build_and_query_index` function.
 
    ```python
-   response, context = await build_and_query_index(project_directory, query, test_mode=True)
+   python telegram_bot.py >> telegram.log 2>&1 &
    ```
 
 2. **Interact via Telegram:**
     - Open Telegram and start a chat with your bot.
     - Use the `/start` command for a welcome message.
-    - Send any question about SwanChain, and the bot will process your query using the GraphRAG pipeline and reply with a generated answer.
+    - Send any question about SwanChain and mention it , and the bot will process your query using the GraphRAG pipeline and reply with a generated answer.
 
 ## How It Works
 
