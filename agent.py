@@ -1,12 +1,14 @@
 import os
 import logging
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile,HTTPException
 import uvicorn
 import graphrag_utils
 from pathlib import Path
 import asyncio
 import nest_asyncio
+from pydantic import BaseModel
+from typing import Optional
 
 # Apply nest_asyncio to solve event loop issues
 nest_asyncio.apply()
@@ -36,6 +38,29 @@ async def upload_file(file: UploadFile = File(...)):
         return {"error": str(e)}
 
 
+class QueryRequest(BaseModel):
+    query: str
+    mode: str = "global"
+
+
+class Response(BaseModel):
+    status: str
+    data: Optional[str] = None
+    message: Optional[str] = None
+
+
+@app.post("/query", response_model=Response)
+async def query(request: QueryRequest):
+    try:
+        PROJECT_DIRECTORY = os.environ.get("WORK_DIRECTORY", "./ragtest")
+        response, context = await graphrag_utils.query_index(PROJECT_DIRECTORY, request.query, request.mode)
+        print("response:", response)
+        print("context:",context)
+        return Response(status="success", data=response)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 async def process_question(query: str) -> str:
     """
     Process a user question:
@@ -45,7 +70,7 @@ async def process_question(query: str) -> str:
       4. Call Meta Llama3 to generate an answer.
     Returns the answer as a string.
     """
-    PROJECT_DIRECTORY = os.environ.get("WORK_DIRECTORY", "./ragtest")  # Project directory containing settings.yaml and output folder.
+    PROJECT_DIRECTORY = os.environ.get("WORK_DIRECTORY","./ragtest")
     response, context = await graphrag_utils.query_index(PROJECT_DIRECTORY, query, 'global')
     return graphrag_utils.get_chat_response(response)['data']
 
@@ -67,8 +92,8 @@ async def main():
     await server.serve()
 
 
-def mask_middle(s: str, end: int) -> str:
-    return s[:3] + '*' * (end-3) + s[end:]
+def mask_string(s: str, visible_start: int, visible_end: int) -> str:
+    return s[:visible_start] + '*' * (len(s) - visible_start - visible_end) + s[-visible_end:]
 
 
 if __name__ == "__main__":
@@ -87,7 +112,7 @@ if __name__ == "__main__":
     REPO_URL = os.environ.get("REPO_URL")
     print(f"REPO_URL: {REPO_URL}")
 
-    LLM_API_KEY = mask_middle(os.environ.get("LLM_API_KEY"),10)
+    LLM_API_KEY = mask_string(os.environ.get("LLM_API_KEY"), 3, 3)
     print(f"LLM_API_KEY: {LLM_API_KEY}")
     LLM_MODEL = os.environ.get("LLM_MODEL")
     print(f"LLM_MODEL: {LLM_MODEL}")
@@ -96,7 +121,7 @@ if __name__ == "__main__":
 
     EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL")
     print(f"EMBEDDING_MODEL: {EMBEDDING_MODEL}")
-    EMBEDDING_API_KEY = mask_middle(os.environ.get("EMBEDDING_API_KEY"),10)
+    EMBEDDING_API_KEY = mask_string(os.environ.get("EMBEDDING_API_KEY"), 3, 3)
     print(f"EMBEDDING_API_KEY: {EMBEDDING_API_KEY}")
     EMBEDDING_MODEL_BASE_URL = os.environ.get("EMBEDDING_API_BASE")
     print(f"EMBEDDING_MODEL_BASE_URL: {EMBEDDING_MODEL_BASE_URL}")

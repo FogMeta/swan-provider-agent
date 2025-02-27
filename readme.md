@@ -139,6 +139,11 @@ To facilitate testing, a separate directory is used to store test files. This al
    ```
    curl -X POST "http://127.0.0.1:8000/upload_file" -H "Content-Type: multipart/form-data" -F "file=@<file_path>.txt"
    ```
+5. Query
+
+```
+curl -X POST "http://127.0.0.1:8000/query" -H "Content-Type: application/json" -d '{"query": "how to build app and build image", "mode": "global"}'
+```
 
 ## Usage
 
