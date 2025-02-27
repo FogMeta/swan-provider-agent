@@ -1,12 +1,39 @@
-import asyncio
 import os
 import logging
 from dotenv import load_dotenv
-import file_utils
+from fastapi import FastAPI, File, UploadFile
+import uvicorn
 import graphrag_utils
+from pathlib import Path
+import asyncio
+import nest_asyncio
+
+# Apply nest_asyncio to solve event loop issues
+nest_asyncio.apply()
 
 # Configure logging.
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+pid = os.getpid()
+logging.basicConfig(filename=f'process_server_{pid}.log', level=logging.INFO,
+                    format="%(asctime)s [%(levelname)s] %(message)s")
+# API routes
+app = FastAPI(title="GraphRAG API", description="API for RAG operations")
+
+
+@app.post("/upload_file")
+async def upload_file(file: UploadFile = File(...)):
+    try:
+        PROJECT_DIRECTORY = os.environ.get("WORK_DIRECTORY", "./ragtest")
+        UPLOAD_DIR = Path(PROJECT_DIRECTORY) / "input"
+        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        file_content = await file.read()
+        file_location = UPLOAD_DIR / file.filename
+        with open(file_location, "wb") as f:
+            f.write(file_content)
+        await graphrag_utils.update_index(PROJECT_DIRECTORY)
+        return {"message": f"File '{file.filename}' has been uploaded successfully.",
+                "file_location": str(file_location)}
+    except Exception as e:
+        return {"error": str(e)}
 
 
 async def process_question(query: str) -> str:
@@ -19,17 +46,28 @@ async def process_question(query: str) -> str:
     Returns the answer as a string.
     """
     PROJECT_DIRECTORY = os.environ.get("WORK_DIRECTORY", "./ragtest")  # Project directory containing settings.yaml and output folder.
-    try:
-        await graphrag_utils.build_index(PROJECT_DIRECTORY)
-    except Exception as e:
-        logging.error("Stopping index processing. Exception: %s",e)
-        return
     response, context = await graphrag_utils.query_index(PROJECT_DIRECTORY, query, 'global')
     return graphrag_utils.get_chat_response(response)['data']
+
+
+async def handler_data():
+    PROJECT_DIRECTORY = os.environ.get("WORK_DIRECTORY", "./ragtest")
+    try:
+        force_build = graphrag_utils.get_bool_env_var("FORCE_BUILD_GRAPH", default=False)
+        await graphrag_utils.build_index(PROJECT_DIRECTORY, force_build)
+    except Exception as e:
+        logging.error("Stopping index processing. Exception: %s", e)
+        return
+
+
+async def main():
+    asyncio.create_task(handler_data())
+    config = uvicorn.Config(app, host="0.0.0.0", port=8000)
+    server = uvicorn.Server(config)
+    await server.serve()
+
 
 if __name__ == "__main__":
     # Load environment variables from .env file.
     load_dotenv()
-    # For testing the agent standalone, uncomment the following lines:
-    answer = asyncio.run(process_question("what is computing-provider account?"))
-    print("Agent Answer:", answer)
+    asyncio.run(main())
