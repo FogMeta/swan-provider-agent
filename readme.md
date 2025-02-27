@@ -133,7 +133,7 @@ To facilitate testing, a separate directory is used to store test files. This al
 
 3. **Start agent server:**
    ```
-   python -m agent.py >> server.log 2>&1 &
+   python agent.py >> server.log 2>&1 &
    ```
 4. Upload a file and the index will be automatically built incrementally
    ```
