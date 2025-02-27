@@ -87,7 +87,7 @@ if __name__ == "__main__":
     REPO_URL = os.environ.get("REPO_URL")
     print(f"REPO_URL: {REPO_URL}")
 
-    LLM_API_KEY = mask_middle(os.environ.get("LLM_API_KEY"))
+    LLM_API_KEY = mask_middle(os.environ.get("LLM_API_KEY"),10)
     print(f"LLM_API_KEY: {LLM_API_KEY}")
     LLM_MODEL = os.environ.get("LLM_MODEL")
     print(f"LLM_MODEL: {LLM_MODEL}")
@@ -96,7 +96,7 @@ if __name__ == "__main__":
 
     EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL")
     print(f"EMBEDDING_MODEL: {EMBEDDING_MODEL}")
-    EMBEDDING_API_KEY = mask_middle(os.environ.get("EMBEDDING_API_KEY"))
+    EMBEDDING_API_KEY = mask_middle(os.environ.get("EMBEDDING_API_KEY"),10)
     print(f"EMBEDDING_API_KEY: {EMBEDDING_API_KEY}")
     EMBEDDING_MODEL_BASE_URL = os.environ.get("EMBEDDING_API_BASE")
     print(f"EMBEDDING_MODEL_BASE_URL: {EMBEDDING_MODEL_BASE_URL}")
