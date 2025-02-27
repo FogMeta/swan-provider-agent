@@ -104,7 +104,7 @@ async def build_index(project_directory: str, force_build_graph=False):
     graphrag_config = create_graphrag_config(values=settings, root_dir=project_directory)
 
     # Define output file paths.
-    output_folder = os.path.join(project_directory, "output")
+    output_folder = os.path.join(project_directory, "ragtest/output")
     entities_path = os.path.join(output_folder, "create_final_entities.parquet")
     communities_path = os.path.join(output_folder, "create_final_communities.parquet")
     community_reports_path = os.path.join(output_folder, "create_final_community_reports.parquet")
@@ -132,13 +132,19 @@ async def update_index(project_directory: str):
     logging.info("Updating build GraphRAG index...")
     try:
         settings_path = os.path.join(project_directory, "settings.yaml")
-        await run_graphrag_update(config_path=settings_path, method="fast", verbose=True)
+        run_graphrag_update(config_path=settings_path, verbose=True)
+        logging.info("Updated build GraphRAG index...")
     except Exception as e:
         logging.error("Exception during index building: %s", e)
         raise
 
 
-def run_graphrag_update(config_path: str, root_path: str = ".", method: str = "standard", verbose: bool = False,
+import subprocess
+import logging
+import sys
+
+
+def run_graphrag_update(config_path: str, root_path: str = ".", verbose: bool = False,
                         memprofile: bool = False, logger: str = "rich", cache: bool = True,
                         skip_validation: bool = False, output_path: str = None):
     # Build the command
@@ -149,8 +155,6 @@ def run_graphrag_update(config_path: str, root_path: str = ".", method: str = "s
         cmd.extend(["--config", config_path])
     if root_path:
         cmd.extend(["--root", root_path])
-    if method:
-        cmd.extend(["--method", method])
     if verbose:
         cmd.append("--verbose")
     if memprofile:
@@ -164,16 +168,35 @@ def run_graphrag_update(config_path: str, root_path: str = ".", method: str = "s
     if output_path:
         cmd.extend(["--output", output_path])
 
+    # Log the full command being executed
+    logging.info(f"Running command: {' '.join(cmd)}")
+
     try:
         # Run the command
         result = subprocess.run(cmd, shell=False, check=True, text=True, capture_output=True)
+
+        # Check if result is successful
+        if result.returncode == 0:
+            logging.info(f"Command executed successfully, return code: {result.returncode}")
+            logging.info(f"Command Output:\n{result.stdout}")
+        else:
+            logging.error(f"Command failed with return code: {result.returncode}")
+            logging.error(f"Error Output:\n{result.stderr}")
+
         # Return standard output
         return result.stdout
+
     except subprocess.CalledProcessError as e:
         # Catch errors in command execution
+        logging.error(f"Command execution failed with error: {e.stderr}")
+        print(f"命令执行失败，错误信息: {e.stderr}")
         return f"Error occurred: {e.stderr}"
 
-
+    except Exception as e:
+        # Catch any other unexpected errors
+        logging.error(f"Unexpected error: {str(e)}")
+        print(f"意外错误: {str(e)}")
+        return f"Unexpected error: {str(e)}"
 
 
 # --------------------
@@ -190,7 +213,7 @@ async def query_index(project_directory: str, query: str, search_mode: str):
     graphrag_config = create_graphrag_config(values=settings, root_dir=project_directory)
 
     # Define index file paths.
-    output_folder = os.path.join(project_directory, "output")
+    output_folder = os.path.join(project_directory, "ragtest/output")
     entities_path = os.path.join(output_folder, "create_final_entities.parquet")
     communities_path = os.path.join(output_folder, "create_final_communities.parquet")
     community_reports_path = os.path.join(output_folder, "create_final_community_reports.parquet")
