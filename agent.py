@@ -67,7 +67,38 @@ async def main():
     await server.serve()
 
 
+def mask_middle(s: str, end: int) -> str:
+    return s[:3] + '*' * (end-3) + s[end:]
+
+
 if __name__ == "__main__":
     # Load environment variables from .env file.
     load_dotenv()
+
+    TEST_MODE = False
+    FORCE_BUILD_GRAPH = False
+
+    WORKING_DIR = os.environ.get("TEST_MODE")
+    print(f"TEST_MODE: {TEST_MODE}")
+    FORCE_BUILD_GRAPH = os.environ.get("FORCE_BUILD_GRAPH")
+    print(f"FORCE_BUILD_GRAPH: {FORCE_BUILD_GRAPH}")
+    WORKING_DIR = os.environ.get("WORK_DIRECTORY")
+    print(f"WORKING_DIR: {WORKING_DIR}")
+    REPO_URL = os.environ.get("REPO_URL")
+    print(f"REPO_URL: {REPO_URL}")
+
+    LLM_API_KEY = os.environ.get("LLM_API_KEY")
+    print(f"LLM_API_KEY: {LLM_API_KEY}")
+    LLM_MODEL = os.environ.get("LLM_MODEL")
+    print(f"LLM_MODEL: {LLM_MODEL}")
+    LLM_API_BASE = os.environ.get("LLM_API_BASE")
+    print(f"LLM_MODEL: {LLM_API_BASE}")
+
+    EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL")
+    print(f"EMBEDDING_MODEL: {EMBEDDING_MODEL}")
+    EMBEDDING_API_KEY = os.environ.get("EMBEDDING_API_KEY")
+    print(f"EMBEDDING_API_KEY: {EMBEDDING_API_KEY}")
+    EMBEDDING_MODEL_BASE_URL = os.environ.get("EMBEDDING_API_BASE")
+    print(f"EMBEDDING_MODEL_BASE_URL: {EMBEDDING_MODEL_BASE_URL}")
+
     asyncio.run(main())

@@ -1,19 +1,15 @@
 import os
-import logging
-import pandas as pd
-import yaml
 import shutil
-import requests
-import subprocess
-from pathlib import Path
+
 # Import Microsoft GraphRAG API and
 import graphrag.api as api
-from graphrag.logger.types import LoggerType
-from graphrag.index.typing import PipelineRunResult
+import pandas as pd
+import requests
+import yaml
 from graphrag.cli.initialize import initialize_project_at
-from graphrag.cli.index import update_cli
 from graphrag.config.create_graphrag_config import create_graphrag_config
-import os
+from graphrag.index.typing import PipelineRunResult
+
 import file_utils
 
 
@@ -82,13 +78,15 @@ async def build_index(project_directory: str, force_build_graph=False):
 
     # Determine the input directory based on test mode
     if get_bool_env_var("TEST_MODE", default=False):
-        test_input_dir = os.path.join(project_directory, "test_input")
+        data_dir = "test_input"
+        test_input_dir = os.path.join(project_directory, data_dir)
         os.makedirs(test_input_dir, exist_ok=True)
         # Assume test files are already placed in this directory
-        abs_input_dir = os.path.abspath(test_input_dir)
-        logging.info("Test mode enabled. Using test input directory: %s", abs_input_dir)
+
+        logging.info("Test mode enabled. Using test input directory: %s", test_input_dir)
     else:
-        abs_input_dir = os.path.join(project_directory, "input")
+        data_dir = "input"
+        abs_input_dir = os.path.join(project_directory, data_dir)
         LOCAL_REPO_PATH = os.path.join(project_directory, "doc_swanchain_repo")
         file_utils.update_repo(LOCAL_REPO_PATH)
         # Converted text files will be saved under the "input" folder.
@@ -98,13 +96,14 @@ async def build_index(project_directory: str, force_build_graph=False):
         raise ValueError(f"No files found in {abs_input_dir}, cannot build index.\n")
         return
 
+    settings["input"]["base_dir"] = data_dir
     logging.info("Using input configuration (base_dir): %s", settings["input"]["base_dir"])
 
     from graphrag.config.create_graphrag_config import create_graphrag_config
     graphrag_config = create_graphrag_config(values=settings, root_dir=project_directory)
 
     # Define output file paths.
-    output_folder = os.path.join(project_directory, "ragtest/output")
+    output_folder = os.path.join(project_directory, "output")
     entities_path = os.path.join(output_folder, "create_final_entities.parquet")
     communities_path = os.path.join(output_folder, "create_final_communities.parquet")
     community_reports_path = os.path.join(output_folder, "create_final_community_reports.parquet")
@@ -132,7 +131,8 @@ async def update_index(project_directory: str):
     logging.info("Updating build GraphRAG index...")
     try:
         settings_path = os.path.join(project_directory, "settings.yaml")
-        run_graphrag_update(config_path=settings_path, verbose=True)
+        current_directory = os.path.join(os.path.abspath(os.getcwd()),project_directory,"output")
+        run_graphrag_update(config_path=settings_path, root_path=os.path.abspath(os.getcwd()), output_path=current_directory, verbose=True)
         logging.info("Updated build GraphRAG index...")
     except Exception as e:
         logging.error("Exception during index building: %s", e)
@@ -141,10 +141,9 @@ async def update_index(project_directory: str):
 
 import subprocess
 import logging
-import sys
 
 
-def run_graphrag_update(config_path: str, root_path: str = ".", verbose: bool = False,
+async def run_graphrag_update(config_path: str, root_path: str = ".", verbose: bool = False,
                         memprofile: bool = False, logger: str = "rich", cache: bool = True,
                         skip_validation: bool = False, output_path: str = None):
     # Build the command

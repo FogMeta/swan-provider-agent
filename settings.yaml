@@ -29,7 +29,7 @@ embeddings:
   async_mode: threaded # or asyncio
   vector_store: 
     type: lancedb # one of [lancedb, azure_ai_search, cosmosdb]
-    db_uri: 'output/lancedb'
+    db_uri: '${WORK_DIRECTORY}/output/lancedb'
     collection_name: default
     overwrite: true
   parallelization:
