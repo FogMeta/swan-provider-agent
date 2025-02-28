@@ -55,7 +55,6 @@ async def query(request: QueryRequest):
         PROJECT_DIRECTORY = os.environ.get("WORK_DIRECTORY", "./ragtest")
         response, context = await graphrag_utils.query_index(PROJECT_DIRECTORY, request.query, request.mode)
         print("response:", response)
-        print("context:",context)
         return Response(status="success", data=response)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -72,7 +71,7 @@ async def process_question(query: str) -> str:
     """
     PROJECT_DIRECTORY = os.environ.get("WORK_DIRECTORY","./ragtest")
     response, context = await graphrag_utils.query_index(PROJECT_DIRECTORY, query, 'global')
-    return graphrag_utils.get_chat_response(response)['data']
+    return response
 
 
 async def handler_data():
