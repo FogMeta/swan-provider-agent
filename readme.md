@@ -56,7 +56,7 @@ graph TD
         S["Search&#160and&#160Inference&#160Knowledge <br>(GraphRAG,&#160Embedding,&#160LLM)"]
     end
 
-    subgraph Telegram Clinet
+    subgraph Telegram Client
     G[Telegram User]
     G1[Telegram User]
     G2[Telegram User]
