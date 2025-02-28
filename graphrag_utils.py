@@ -193,7 +193,9 @@ async def query_index(project_directory: str, query: str, search_mode: str):
     """
 
     graphrag_config = load_config(root_dir=Path(project_directory))
-
+    graphrag_config.storage.base_dir = os.path.join(project_directory, "output")
+    graphrag_config.reporting.base_dir = os.path.join(project_directory, "logs")
+    graphrag_config.embeddings.vector_store['db_uri'] = os.path.join(project_directory, "output/lancedb")
     # Define index file paths.
     output_folder = os.path.join(project_directory, "output")
     entities_path = os.path.join(output_folder, "create_final_entities.parquet")
