@@ -44,8 +44,6 @@ The workflow is as follows:
 
 ```mermaid
 graph TD
-    
-
     subgraph SPA[Swan Provider Agent]
         B["git clone Docs <br>(GitHub, Gitlab)"]
         B --> C["Process the Files <br>(convert md to text)"]
@@ -74,7 +72,6 @@ graph TD
     E <-.-> TGA -.-> |query mode: global| DB -.->S -.-> TGA
 
 ```
-
 
 ## Prerequisites
 
@@ -177,9 +174,9 @@ To facilitate testing, a separate directory is used to store test files. This al
    ```
 5. Query
 
-```
-curl -X POST "http://127.0.0.1:8000/query" -H "Content-Type: application/json" -d '{"query": "how to build app and build image", "mode": "global"}'
-```
+    ```
+    curl -X POST "http://127.0.0.1:8000/query" -H "Content-Type: application/json" -d '{"query": "how to build app and build image", "mode": "global"}'
+    ```
 
 ## Usage
 
@@ -228,6 +225,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 - Microsoft GraphRAG for the underlying indexing and retrieval API.
 - OpenAI and Azure for their LLM services.
 - Contributors to the python-telegram-bot library.
-
-```
 
