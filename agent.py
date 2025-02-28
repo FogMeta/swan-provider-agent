@@ -70,7 +70,7 @@ async def process_question(query: str) -> str:
     Returns the answer as a string.
     """
     PROJECT_DIRECTORY = os.environ.get("WORK_DIRECTORY","./ragtest")
-    response, context = await graphrag_utils.query_index(PROJECT_DIRECTORY, query, 'global')
+    response, context = await graphrag_utils.query_index(PROJECT_DIRECTORY, query, 'local')
     return response
 
 
