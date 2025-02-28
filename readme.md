@@ -40,6 +40,42 @@ The workflow is as follows:
 - **Telegram Bot Interface:**  
   Users can ask questions directly through Telegram.
 
+## Architecture
+
+```mermaid
+graph TD
+    
+
+    subgraph SPA[Swan Provider Agent]
+        B["git clone Docs <br>(GitHub, Gitlab)"]
+        B --> C["Process the Files <br>(convert md to text)"]
+        C --> D["Build  Graph Index <br>(GraphRAG,&#160Embedding,&#160LLM)"]
+        D --> DB[Knowledge Database]
+        TGA[Telegram agency]
+
+        D
+        F[Update Index]
+        S["Search&#160and&#160Inference&#160Knowledge <br>(GraphRAG,&#160Embedding,&#160LLM)"]
+    end
+
+    subgraph Telegram Clinet
+    G[Telegram User]
+    G1[Telegram User]
+    G2[Telegram User]
+    E[Telegram Bot]
+    end
+
+    A[Start] --> B
+    U[User] --upload files--> F
+    F --> |new indexes| D
+    G[Telegram User] <-.->|chat| E
+    G1<-.->|chat| E
+    G2<-.->|chat| E
+    E <-.-> TGA -.-> |query mode: global| DB -.->S -.-> TGA
+
+```
+
+
 ## Prerequisites
 
 - **Python 3.10+**
