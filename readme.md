@@ -1,4 +1,5 @@
-# SwanChain Telegram Bot with GraphRAG & Meta Llama3
+# Swan Provider Agent 
+SwanChain Telegram Bot with GraphRAG & Meta Llama3
 
 This project implements a Telegram bot that allows users to ask questions about SwanChain. The bot uses Microsoft GraphRAG to build a knowledge graph (index) from SwanChain GitBook documentation and then leverages Meta Llama3 to generate answers enriched with context.
 
